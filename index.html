@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>원탭링크 스튜디오 — 리틀리 로고 없이, 평생 무료 링크 페이지</title>
+<meta name="description" content="프로필 링크 페이지와 1분 견적 문의폼을 만들고 외부 요청 0건의 HTML 한 파일로 내보냅니다. 리틀리·인포크링크의 유료 테마 없이, 내 GitHub Pages에 그대로 올리면 끝.">
+<meta name="theme-color" content="#eeede7">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#railNav">편집 메뉴로 바로가기</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="#" data-action="reset-view" aria-label="원탭링크 스튜디오 홈">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="34" height="34">
+          <rect x="1" y="1" width="38" height="38" rx="11" fill="#1f3d33"/>
+          <rect x="11" y="7.5" width="18" height="25" rx="4.4" fill="none" stroke="#f4f2ea" stroke-width="2"/>
+          <path d="M15.4 15.6h9.2M15.4 20h9.2M15.4 24.4h5.6" stroke="#f4f2ea" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="20" cy="28.6" r="1.5" fill="#c9e4bd"/>
+        </svg>
+      </span>
+      <span class="brand-t">
+        <strong>원탭링크 스튜디오</strong>
+        <small>ONETAPLINK STUDIO</small>
+      </span>
+    </a>
+
+    <p class="top-mid">
+      <span class="save-state" id="saveState" aria-live="polite">저장됨</span>
+      <span class="muted">이 브라우저에만 저장됩니다 · 서버 전송 0</span>
+      <a class="muted top-privacy" href="privacy.html" target="_blank" rel="noopener">개인정보 처리방침</a>
+    </p>
+
+    <div class="top-actions">
+      <button type="button" class="btn btn-quiet" id="undoBtn" data-action="undo" disabled title="되돌리기 (Ctrl+Z)" aria-label="되돌리기">
+        <span class="undo-glyph" aria-hidden="true">↺</span><span class="hide-sm">되돌리기</span>
+      </button>
+      <button type="button" class="btn btn-quiet only-wide hide-sm" data-action="open-templates">템플릿</button>
+      <button type="button" class="btn btn-line hide-sm" data-action="open-page">새 탭에서 보기</button>
+      <button type="button" class="btn btn-primary" data-action="export">
+        <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M10 3v9m0 0 3.4-3.4M10 12 6.6 8.6M4 14.4v1.4A1.6 1.6 0 0 0 5.6 17.4h8.8A1.6 1.6 0 0 0 16 15.8v-1.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="hide-xs">HTML 1파일 내보내기</span><span class="show-xs">내보내기</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="shell" id="main" data-view="edit">
+  <!-- ─────────── 왼쪽: 편집 레일 ─────────── -->
+  <div class="rail" id="railNav">
+    <nav class="rail-tabs" role="tablist" aria-label="편집 항목">
+      <button type="button" class="rail-tab is-on" role="tab" aria-selected="true" data-panel="profile"><span class="num">01</span>프로필</button>
+      <button type="button" class="rail-tab" role="tab" aria-selected="false" data-panel="links"><span class="num">02</span>링크<span class="rail-count" id="linkCount">0</span></button>
+      <button type="button" class="rail-tab" role="tab" aria-selected="false" data-panel="form"><span class="num">03</span>문의폼</button>
+      <button type="button" class="rail-tab" role="tab" aria-selected="false" data-panel="design"><span class="num">04</span>디자인</button>
+    </nav>
+
+    <div class="panels">
+      <!-- 프로필 -->
+      <section class="panel is-on" id="panel-profile" role="tabpanel" aria-label="프로필 편집">
+        <div class="panel-head">
+          <h2>프로필</h2>
+          <p class="panel-sub">사진·이름·한 줄 소개와 SNS 아이콘.</p>
+        </div>
+
+        <div class="avatar-edit">
+          <div class="avatar-preview" id="avatarPreview" aria-hidden="true"></div>
+          <div class="avatar-actions">
+            <button type="button" class="btn btn-line btn-sm" data-action="avatar-pick">사진 올리기</button>
+            <button type="button" class="btn btn-quiet btn-sm" data-action="avatar-clear">지우기</button>
+            <p class="hint">320px 정사각으로 줄여 페이지 안에 함께 넣습니다. 외부 이미지 주소는 쓰지 않습니다.</p>
+          </div>
+          <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp" hidden>
+        </div>
+
+        <div class="field-grid">
+          <label class="field"><span>이름</span><input id="fName" type="text" maxlength="30" placeholder="한서연" autocomplete="off"></label>
+          <label class="field"><span>아이디(선택)</span><span class="input-prefix"><b>@</b><input id="fHandle" type="text" maxlength="24" placeholder="seoyeon.han" autocomplete="off"></span></label>
+          <label class="field field-wide"><span>한 줄 소개 <em id="taglineCount">0/70</em></span><textarea id="fTagline" rows="2" maxlength="70" placeholder="무엇을 하는 사람인지 한 줄로"></textarea></label>
+        </div>
+
+        <div class="field">
+          <span class="field-label">사진 모양</span>
+          <div class="seg" id="shapeSeg" role="group" aria-label="사진 모양">
+            <button type="button" class="seg-btn is-on" data-shape="circle">원형</button>
+            <button type="button" class="seg-btn" data-shape="round">둥근 사각</button>
+            <button type="button" class="seg-btn" data-shape="arch">아치</button>
+          </div>
+        </div>
+
+        <div class="block-head"><h3>SNS 아이콘</h3><span class="muted">주소를 넣은 것만 보입니다</span></div>
+        <div class="social-list" id="socialList"></div>
+
+        <div class="block-head"><h3>페이지 정보</h3><span class="muted">검색·공유 미리보기</span></div>
+        <div class="field-grid">
+          <label class="field field-wide"><span>페이지 제목 <em id="pageTitleCount">0/60</em></span><input id="fPageTitle" type="text" maxlength="60"></label>
+          <label class="field field-wide"><span>설명</span><textarea id="fPageDesc" rows="2" maxlength="140" placeholder="비어 있으면 한 줄 소개를 씁니다"></textarea></label>
+          <label class="field field-wide"><span>하단 문구(선택)</span><input id="fFooter" type="text" maxlength="80" placeholder="© 2026 한서연 디자인 스튜디오"></label>
+        </div>
+      </section>
+
+      <!-- 링크 -->
+      <section class="panel" id="panel-links" role="tabpanel" aria-label="링크 편집" hidden>
+        <div class="panel-head">
+          <h2>링크</h2>
+          <p class="panel-sub">손잡이를 잡고 끌면 순서가 바뀝니다. 위·아래 버튼도 됩니다.</p>
+        </div>
+        <div class="list-toolbar">
+          <span class="pill" id="linkPill">0 / 20</span>
+          <button type="button" class="btn btn-line btn-sm" data-action="add-link">+ 링크 추가</button>
+        </div>
+        <div class="link-list" id="linkList"></div>
+        <p class="panel-foot">문의폼 카드는 이 목록 안에서 원하는 위치로 옮길 수 있습니다.</p>
+      </section>
+
+      <!-- 문의폼 -->
+      <section class="panel" id="panel-form" role="tabpanel" aria-label="문의폼 편집" hidden>
+        <div class="panel-head">
+          <h2>문의폼</h2>
+          <p class="panel-sub">이름·연락처·내용을 받아 <b>보낼 문구</b>를 만들어 줍니다. 서버가 없어도 됩니다.</p>
+        </div>
+
+        <label class="switch-row">
+          <span><b>문의폼 켜기</b><small>링크 목록 안에 카드로 들어갑니다</small></span>
+          <input type="checkbox" id="formEnabled" class="switch">
+        </label>
+
+        <div class="field">
+          <span class="field-label">받는 방식</span>
+          <div class="mode-grid" id="modeGrid"></div>
+        </div>
+
+        <div class="field-grid">
+          <label class="field field-wide"><span>카드 제목</span><input id="fFormTitle" type="text" maxlength="34"></label>
+          <label class="field field-wide"><span>안내 문구</span><textarea id="fFormNote" rows="2" maxlength="120"></textarea></label>
+        </div>
+
+        <div id="formLinkFields" hidden>
+          <label class="field"><span>폼 주소 (구글폼·노션폼)</span><input id="fFormUrl" type="url" placeholder="https://forms.gle/..."></label>
+        </div>
+
+        <div class="block-head"><h3>보낼 곳</h3><span class="muted">하나 이상 필요</span></div>
+        <div class="field-grid">
+          <label class="field"><span>받을 메일</span><input id="fFormEmail" type="email" placeholder="hello@example.com"></label>
+          <label class="field"><span>카카오 오픈채팅</span><input id="fFormKakao" type="url" placeholder="https://open.kakao.com/o/..."></label>
+          <label class="field"><span>문자 번호(선택)</span><input id="fFormPhone" type="tel" placeholder="010-0000-0000"></label>
+        </div>
+
+        <div class="block-head"><h3>추가 질문</h3></div>
+        <label class="check-row"><input type="checkbox" id="fieldType"> 문의 종류 (제작·협업·강의·기타)</label>
+        <label class="check-row"><input type="checkbox" id="fieldBudget"> 예산 범위 (5단계)</label>
+
+        <div class="block-head"><h3>받게 될 문구</h3><button type="button" class="btn btn-quiet btn-sm" data-action="copy-inquiry-sample">복사</button></div>
+        <pre class="preview-text" id="formPreviewText" tabindex="0"></pre>
+        <p class="panel-foot" id="formReadyNote"></p>
+      </section>
+
+      <!-- 디자인 -->
+      <section class="panel" id="panel-design" role="tabpanel" aria-label="디자인 편집" hidden>
+        <div class="panel-head">
+          <h2>디자인</h2>
+          <p class="panel-sub">디자인 레퍼런스 엔진 v2의 프리셋 8종. 색 대비는 WCAG AA로 검사합니다.</p>
+        </div>
+
+        <div class="block-head"><h3>프리셋</h3><span class="muted" id="presetNote"></span></div>
+        <div class="preset-grid" id="presetGrid"></div>
+
+        <div class="block-head"><h3>폰트 믹스</h3></div>
+        <div class="chip-list" id="fontMixList"></div>
+
+        <div class="block-head"><h3>종이·필름 그레인</h3></div>
+        <div class="chip-list" id="grainList"></div>
+
+        <div class="field-grid">
+          <label class="field"><span>포인트 색</span>
+            <span class="color-row">
+              <input id="accentColor" type="color" value="#a8431f" aria-label="포인트 색">
+              <input id="accentHex" type="text" maxlength="7" placeholder="#A8431F" spellcheck="false" aria-label="포인트 색 코드">
+              <button type="button" class="btn btn-quiet btn-sm" data-action="accent-reset">기본값</button>
+            </span>
+          </label>
+          <label class="field"><span>모서리 <em id="radiusVal">0px</em></span>
+            <input id="radiusRange" type="range" min="0" max="28" step="1" value="0">
+          </label>
+        </div>
+
+        <div class="block-head"><h3>색 대비 검사</h3><span class="muted">WCAG 2.2 AA</span></div>
+        <ul class="contrast-list" id="contrastList"></ul>
+
+        <div class="block-head"><h3>브랜드 키트</h3><span class="muted">톤 고정 · 재사용</span></div>
+        <div id="kitBanner" class="kit-banner" hidden></div>
+        <div class="field-grid">
+          <label class="field"><span>키트 이름</span><input id="kitName" type="text" maxlength="40" placeholder="한서연 브랜드"></label>
+        </div>
+        <div class="kit-actions">
+          <button type="button" class="btn btn-line btn-sm" data-action="kit-save">지금 디자인 고정</button>
+          <button type="button" class="btn btn-quiet btn-sm" data-action="kit-json">JSON 복사</button>
+          <button type="button" class="btn btn-quiet btn-sm" data-action="kit-import">JSON 붙여넣기</button>
+          <button type="button" class="btn btn-quiet btn-sm" data-action="kit-clear" hidden>고정 해제</button>
+        </div>
+        <div id="kitList" class="kit-list"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ─────────── 가운데: 폰 미리보기 ─────────── -->
+  <section class="stage" id="stage" aria-label="폰 미리보기">
+    <div class="stage-head">
+      <div class="stage-title">
+        <h2>미리보기</h2>
+        <span class="preset-tag" id="presetTag">크림 에디토리얼</span>
+      </div>
+      <div class="zoom" role="group" aria-label="미리보기 크기">
+        <button type="button" class="zoom-btn is-on" data-zoom="fit">맞춤</button>
+        <button type="button" class="zoom-btn" data-zoom="one">100%</button>
+      </div>
+    </div>
+    <div class="stage-body">
+      <div class="phone" id="phone">
+        <div class="phone-frame">
+          <span class="phone-notch" aria-hidden="true"></span>
+          <div class="phone-screen">
+            <iframe id="phoneFrame" title="내 링크 페이지 미리보기" src="about:blank"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="stage-foot">
+      <span class="dot-live" aria-hidden="true"></span>
+      미리보기에서는 링크가 열리지 않습니다. 내보낸 파일에서는 그대로 열려요.
+    </p>
+  </section>
+
+  <!-- ─────────── 오른쪽: 발행 점검 ─────────── -->
+  <aside class="side" aria-label="발행 준비">
+    <div class="side-card audit-card">
+      <div class="audit-head">
+        <h2>발행 준비 점검</h2>
+        <span class="score" id="auditScore" aria-live="polite">0</span>
+      </div>
+      <ul class="audit-list" id="auditList"></ul>
+    </div>
+
+    <div class="side-card export-card">
+      <div class="export-top">
+        <span class="file-name">index.html</span>
+        <span class="file-size" id="exportSize">—</span>
+      </div>
+      <div class="fact-row">
+        <span class="fact">외부 요청 <b>0</b></span>
+        <span class="fact">리틀리 로고 <b>0</b></span>
+        <span class="fact">광고 <b>0</b></span>
+      </div>
+      <button type="button" class="btn btn-primary btn-block" data-action="export">내 페이지 HTML 내려받기</button>
+      <p class="hint">파일 하나입니다. GitHub Pages·노션·아무 호스팅에 올리면 그대로 링크가 됩니다.</p>
+      <ol class="steps">
+        <li><b>내려받기</b> — index.html 저장</li>
+        <li><b>올리기</b> — GitHub 저장소에 파일 추가</li>
+        <li><b>켜기</b> — Settings → Pages → main</li>
+      </ol>
+    </div>
+
+    <div class="side-card stat-card">
+      <div class="stat"><span>링크</span><b id="statLinks">0</b></div>
+      <div class="stat"><span>글자</span><b id="statChars">0</b></div>
+      <div class="stat"><span>디자인</span><b id="statPreset">—</b></div>
+    </div>
+
+    <p class="why">
+      <b>월 0원인 이유</b> — 서버가 없습니다. 이 스튜디오도, 내보낸 페이지도 브라우저에서만 돌아갑니다.
+      로고도 광고도 끼워 넣지 않습니다.
+    </p>
+  </aside>
+</main>
+
+<footer class="app-foot">
+  <div class="app-foot-in">
+    <p class="app-foot-note">원탭링크 스튜디오 · 서버 없음 · 계정 없음 · 외부 전송 0건 · 만든 페이지는 이 브라우저에서 HTML 파일 하나로 내려받습니다.</p>
+    <p class="muted"><a href="privacy.html">개인정보 처리방침</a></p>
+  </div>
+</footer>
+
+<!-- 모바일 편집/미리보기 전환 -->
+<div class="mobile-switch" role="group" aria-label="편집 또는 미리보기">
+  <button type="button" class="is-on" data-mview="edit">편집</button>
+  <button type="button" data-mview="preview">미리보기</button>
+</div>
+
+<!-- 템플릿 모달 -->
+<dialog class="modal" id="tplModal" aria-labelledby="tplTitle">
+  <div class="modal-head">
+    <div><h2 id="tplTitle">템플릿</h2><p>지금 페이지를 바꿉니다. 되돌리기로 복구할 수 있어요.</p></div>
+    <button type="button" class="icon-btn" data-action="close-modal" aria-label="닫기">✕</button>
+  </div>
+  <div class="tpl-grid" id="tplList"></div>
+</dialog>
+
+<!-- 내보내기 모달 -->
+<dialog class="modal" id="exportModal" aria-labelledby="exportTitle">
+  <div class="modal-head">
+    <div><h2 id="exportTitle">내보냈습니다</h2><p id="exportSummary">index.html</p></div>
+    <button type="button" class="icon-btn" data-action="close-modal" aria-label="닫기">✕</button>
+  </div>
+  <div class="export-body">
+    <div class="export-stats" id="exportStats"></div>
+    <div class="export-checks" id="exportChecks"></div>
+    <p class="hint" id="exportNote"></p>
+  </div>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-quiet" data-action="close-modal">닫기</button>
+    <button type="button" class="btn btn-line" data-action="open-page">새 탭에서 열기</button>
+    <button type="button" class="btn btn-primary" data-action="export">다시 내려받기</button>
+  </div>
+</dialog>
+
+<!-- 브랜드 키트 JSON 모달 -->
+<dialog class="modal" id="kitModal" aria-labelledby="kitTitle">
+  <div class="modal-head">
+    <div><h2 id="kitTitle">브랜드 키트 JSON</h2><p>다른 페이지·시안에 그대로 붙여 넣으면 톤이 고정됩니다.</p></div>
+    <button type="button" class="icon-btn" data-action="close-modal" aria-label="닫기">✕</button>
+  </div>
+  <textarea class="kit-json" id="kitJson" rows="12" spellcheck="false" aria-label="브랜드 키트 JSON"></textarea>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-quiet" data-action="close-modal">닫기</button>
+    <button type="button" class="btn btn-primary" data-action="kit-json-apply">이 키트 적용</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="engines/design-ref-engine.js"></script>
+<script src="core.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
