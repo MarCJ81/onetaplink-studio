@@ -1,47 +1,91 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-design="crisp-bento/v1">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="favicon.svg" />
 <title>개인정보 처리 방침 — 원탭링크 스튜디오</title>
 <meta name="description" content="원탭링크 스튜디오는 서버 없이 브라우저에서만 동작하는 정적 앱으로, 수집하는 개인정보가 없습니다." />
+<meta name="theme-color" content="#FAFAFA" />
+<meta name="color-scheme" content="light" />
 <style>
-  :root { color-scheme: light dark; }
-  body { max-width: 720px; margin: 0 auto; padding: 40px 20px 80px; font: 15px/1.75 -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; color: #171a1f; background: #fbfcfd; }
-  @media (prefers-color-scheme: dark) { body { color: #e9edf1; background: #0c0f13; } a { color: #7cc4ff; } }
-  h1 { font-size: 24px; letter-spacing: -.02em; }
-  h2 { font-size: 16px; margin-top: 28px; }
-  .muted { opacity: .7; font-size: 13px; }
-  a { color: #0f6fd1; }
-  ul { padding-left: 20px; }
+  @font-face { font-family: 'PlexKR'; src: url('assets/fonts/plexkr-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+  @font-face { font-family: 'PlexKR'; src: url('assets/fonts/plexkr-SemiBold.woff2') format('woff2'); font-weight: 500 600; font-display: swap; }
+  @font-face { font-family: 'PlexKR'; src: url('assets/fonts/plexkr-Bold.woff2') format('woff2'); font-weight: 700 900; font-display: swap; }
+  :root {
+    --paper: #FAFAFA; --surface: #FFFFFF; --surface-2: #F5F6F7;
+    --ink: #0C0D0F; --sub: #3C4045; --muted: #6B7076;
+    --line: #E7E8EA; --accent: #2F5BFF; --accent-text: #2445C9; --accent-soft: #EEF2FF; --accent-line: #DDE4FF;
+    --font: 'PlexKR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 20px 80px;
+    background: var(--paper); color: var(--ink);
+    font-family: var(--font); font-size: 15px; line-height: 1.75; letter-spacing: -0.011em;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 720px; margin: 0 auto; }
+  .brand { display: inline-flex; align-items: center; gap: 9px; padding: 6px 12px 6px 6px; margin-bottom: 22px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px; font-size: 12.5px; font-weight: 700; text-decoration: none; color: var(--ink); }
+  .brand svg { display: block; border-radius: 8px; }
+  .brand i { width: 6px; height: 6px; border-radius: 50%; background: #0B7A55; box-shadow: 0 0 0 3px rgba(11,122,85,.14); margin-left: 2px; }
+  h1 { margin: 0; font-size: clamp(30px, 4vw, 40px); line-height: 1.1; letter-spacing: -0.045em; font-weight: 800; }
+  .meta { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+  .card { margin-top: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 8px 24px 20px; }
+  h2 { margin: 22px 0 0; font-size: 15.5px; letter-spacing: -0.03em; font-weight: 800; }
+  h2 span { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; font-weight: 600; color: var(--muted); margin-right: 8px; letter-spacing: 0; }
+  p { margin: 7px 0 0; color: var(--sub); font-size: 14px; }
+  .note { margin-top: 24px; padding: 14px 16px; border-radius: 12px; background: var(--accent-soft); border: 1px solid var(--accent-line); color: var(--accent-text); font-size: 13px; line-height: 1.6; }
+  .back { display: inline-flex; align-items: center; gap: 6px; margin-top: 26px; padding: 10px 16px; border-radius: 12px;
+    background: var(--ink); color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; }
+  a { color: var(--accent-text); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (max-width: 520px) { body { padding: 26px 14px 64px; } .card { padding: 4px 16px 16px; } }
 </style>
 </head>
 <body>
-<h1>개인정보 처리 방침</h1>
-<p class="muted">원탭링크 스튜디오 · 최종 갱신 2026-11-21</p>
+<main>
+  <a class="brand" href="./">
+    <svg viewBox="0 0 40 40" width="26" height="26" aria-hidden="true">
+      <rect x="1" y="1" width="38" height="38" rx="11" fill="#0C0D0F"/>
+      <rect x="11" y="7.5" width="18" height="25" rx="4.4" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <path d="M15.4 15.6h9.2M15.4 20h9.2M15.4 24.4h5.6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="20" cy="28.6" r="1.6" fill="#5C7DFF"/>
+    </svg>
+    원탭링크 스튜디오 <i aria-hidden="true"></i> 서버 0
+  </a>
 
-<h2>1. 수집하는 개인정보</h2>
-<p>없습니다. 회원가입·로그인·결제가 없고 운영자 서버가 없습니다. 스튜디오에서 만든 페이지는 이용자의 브라우저에서 만들어져 파일 1개로 내려받아지며, 앱이 그 내용을 받아 가지 않습니다.</p>
+  <h1>개인정보 처리 방침</h1>
+  <p class="meta">원탭링크 (OneTapLink) 스튜디오 · 최종 갱신 2026-11-21</p>
 
-<h2>2. 저장 위치와 항목</h2>
-<p>프로필, 링크, 디자인 설정, 문의폼 설정과 임시 저장 초안이 브라우저 localStorage에 저장됩니다.</p>
+  <div class="card">
+    <h2><span>01</span>수집하는 개인정보</h2>
+    <p>없습니다. 회원가입·로그인·결제가 없고 운영자 서버가 없습니다. 스튜디오에서 만든 페이지는 이용자의 브라우저에서 만들어져 파일 1개로 내려받아지며, 앱이 그 내용을 받아 가지 않습니다.</p>
 
-<h2>3. 외부 전송</h2>
-<p>외부 전송이 0건입니다. 내보낸 index.html도 외부 스크립트·폰트·이미지를 부르지 않습니다. 문의폼에 방문자가 쓴 이름·연락처·문의 내용은 서버로 보내지 않고, 방문자 화면에서 보낼 문구로만 만들어집니다.</p>
+    <h2><span>02</span>저장 위치와 항목</h2>
+    <p>프로필, 링크, 디자인 설정, 문의폼 설정과 임시 저장 초안이 브라우저 localStorage에 저장됩니다.</p>
 
-<h2>4. 쿠키·추적</h2>
-<p>쿠키를 쓰지 않습니다. 분석 도구·광고 픽셀·외부 트래커를 넣지 않으며, 이용 기록을 수집하지 않습니다.</p>
+    <h2><span>03</span>외부 전송</h2>
+    <p>외부 전송이 0건입니다. 내보낸 index.html도 외부 스크립트·폰트·이미지를 부르지 않습니다. 문의폼에 방문자가 쓴 이름·연락처·문의 내용은 서버로 보내지 않고, 방문자 화면에서 보낼 문구로만 만들어집니다.</p>
 
-<h2>5. 보관과 삭제</h2>
-<p>스튜디오에서 항목별로 삭제할 수 있고, 브라우저 사이트 데이터를 지우면 저장된 초안과 설정이 모두 삭제됩니다. 내려받은 index.html은 이용자가 직접 관리합니다.</p>
+    <h2><span>04</span>쿠키·추적</h2>
+    <p>쿠키를 쓰지 않습니다. 분석 도구·광고 픽셀·외부 트래커를 넣지 않으며, 이용 기록을 수집하지 않습니다.</p>
 
-<h2>6. 제3자 제공</h2>
-<p>제3자에게 제공하는 데이터가 없습니다. 운영자는 이용자의 데이터를 받지 않으므로 별도 제공·위탁이 없습니다.</p>
+    <h2><span>05</span>보관과 삭제</h2>
+    <p>스튜디오에서 항목별로 삭제할 수 있고, 브라우저 사이트 데이터를 지우면 저장된 초안과 설정이 모두 삭제됩니다. 내려받은 index.html은 이용자가 직접 관리합니다.</p>
 
-<h2>7. 문의</h2>
-<p>이 앱은 정적 파일로 배포되며 운영자에게 개인정보가 전달되지 않습니다. 문의·오류 제보는 배포 페이지에 안내된 연락처나 배포 저장소의 이슈로 남겨 주세요.</p>
+    <h2><span>06</span>제3자 제공</h2>
+    <p>제3자에게 제공하는 데이터가 없습니다. 운영자는 이용자의 데이터를 받지 않으므로 별도 제공·위탁이 없습니다.</p>
 
-<p><a href="./">← 앱으로 돌아가기</a></p>
+    <h2><span>07</span>문의</h2>
+    <p>이 앱은 정적 파일로 배포되며 운영자에게 개인정보가 전달되지 않습니다. 문의·오류 제보는 배포 페이지에 안내된 연락처나 배포 저장소의 이슈로 남겨 주세요.</p>
+  </div>
+
+  <p class="note">이 페이지도 외부 폰트·스크립트를 부르지 않습니다. 글꼴은 앱과 함께 배포되는 로컬 파일만 씁니다.</p>
+
+  <p><a class="back" href="./">← 앱으로 돌아가기</a></p>
+</main>
 </body>
 </html>
