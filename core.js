@@ -209,6 +209,44 @@
      2. 기본 상태 · 정규화
      ========================================================== */
 
+  var DEMO_TITLE = '한서연 · 브랜드 디자이너';
+  var DEMO_DESCRIPTION = '로고·패키지·편집 디자인. 11월 신규 프로젝트 두 건만 받습니다.';
+  var AUTO_TITLES = ['내 링크 페이지', '내 이름 링크', '내 링크'];
+
+  /** 이름만 넣었을 때 쓰는 기본 페이지 제목. 내보낸 HTML의 <title>도 이 값을 쓴다. */
+  function autoTitle(name) {
+    var n = String(name || '').trim();
+    return (n && n !== '내 이름' ? n : '내') + ' 링크';
+  }
+
+  /** 사용자가 직접 쓴 제목과, 이름을 따라 바뀌어야 하는 제목을 구분한다. */
+  function isAutoTitle(title, name) {
+    var t = String(title || '').trim();
+    if (!t) return true;
+    if (AUTO_TITLES.indexOf(t) !== -1) return true;
+    if (name && (t === name || t === autoTitle(name))) return true;
+    if (name && name !== '한서연' && t === DEMO_TITLE) return true;
+    return false;
+  }
+
+  /**
+   * 이름을 바꾸면 페이지 제목도 따라 바꾼다.
+   *  - 비어 있거나 기본값이면 새 이름 + ' 링크'
+   *  - '이름 · 직함'처럼 옛 이름으로 시작하면 이름 부분만 교체
+   *  - 그 밖에 직접 쓴 제목은 그대로 둔다
+   */
+  function retitleForName(title, oldName, newName) {
+    var current = String(title == null ? '' : title);
+    var next = String(newName || '').trim();
+    if (!next || next === '내 이름') return current;
+    if (isAutoTitle(current, oldName)) return cut(autoTitle(next), LIMITS.pageTitle);
+    var from = String(oldName || '').trim();
+    if (from && from !== next && current.indexOf(from) === 0) {
+      return cut(next + current.slice(from.length), LIMITS.pageTitle);
+    }
+    return current;
+  }
+
   function defaultState() {
     return {
       v: 1,
@@ -421,7 +459,11 @@
 
   function updateProfile(state, patch) {
     var s = clone(state);
+    var before = s.profile.name;
     s.profile = Object.assign({}, s.profile, patch || {});
+    if (patch && Object.prototype.hasOwnProperty.call(patch, 'name') && patch.name !== before) {
+      s.meta = Object.assign({}, s.meta, { title: retitleForName(s.meta.title, before, patch.name) });
+    }
     return normalizeState(s);
   }
 
@@ -1118,8 +1160,13 @@
     var scale = phoneScale(d.tokens);
     var css = buildCSS(s, d, scale);
     var dark = luminanceOf(d.tokens.color.bg) < 0.35;
-    var title = s.meta.title || (s.profile.name + ' 링크');
-    var desc = s.meta.description || clipText(s.profile.tagline || (s.profile.name + '의 링크 모음'), 120);
+    var title = s.meta.title;
+    var genericTitle = !title || AUTO_TITLES.indexOf(title) !== -1 || (title === DEMO_TITLE && s.profile.name !== '한서연');
+    if (genericTitle) title = autoTitle(s.profile.name);
+    var desc = s.meta.description;
+    if (!desc || (desc === DEMO_DESCRIPTION && s.profile.name !== '한서연')) {
+      desc = clipText(s.profile.tagline || (s.profile.name + '의 링크 모음'), 120);
+    }
     var favicon = iconDataUri(firstChar(s.profile.name), d.tokens.color.accent, d.tokens.color.accentInk);
     var body = renderPage(s, { normalized: true, now: opts.now });
     var script = clientScript(formCfg(s));

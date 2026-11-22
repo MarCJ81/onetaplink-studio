@@ -144,7 +144,7 @@
   function soft(next) {
     beginBurst();
     state = C.normalizeState(next);
-    updateCounters();
+    syncDerivedFields();
     renderStats();
     renderFormPreviewText();
     scheduleSave();
@@ -241,6 +241,12 @@
   function updateCounters() {
     setText('taglineCount', state.profile.tagline.length + '/70');
     setText('pageTitleCount', state.meta.title.length + '/60');
+  }
+
+  /** 다른 값을 고쳐서 따라 바뀌는 입력란(이름 → 페이지 제목)을 다시 그린다. */
+  function syncDerivedFields() {
+    setInput('fPageTitle', state.meta.title);
+    updateCounters();
   }
 
   function renderSocials() {
