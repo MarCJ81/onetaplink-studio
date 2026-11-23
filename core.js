@@ -107,6 +107,33 @@
     return s.replace(/\s+/g, '');
   }
 
+  /** 공개 주소(공유 QR이 가리킬 주소). http/https만. 스킴이 없으면 https를 붙인다. */
+  function normalizeShareUrl(v) {
+    var s = cut(v, LIMITS.shareUrl).trim();
+    if (!s) return '';
+    if (/^[a-z][a-z0-9+.-]*:/i.test(s) && !/^https?:/i.test(s)) return '';
+    if (!/^https?:\/\//i.test(s)) s = 'https://' + s.replace(/^\/+/, '');
+    if (/[\u0000-\u001f\u007f\s"'<>]/.test(s)) return '';
+    if (!/^https?:\/\/[^/?#\s]+/i.test(s)) return '';
+    return s;
+  }
+
+  /** QR 이미지는 파일 안에 박아 넣는 data URI만 받는다(SVG·PNG). */
+  function normalizeQr(v) {
+    var s = String(v === null || v === undefined ? '' : v).trim();
+    if (!s) return '';
+    if (!/^data:image\/(svg\+xml|png);base64,[A-Za-z0-9+/=]+$/i.test(s)) return '';
+    if (s.length > LIMITS.qrBytes) return '';
+    return s;
+  }
+
+  function shareHost(url) {
+    var u = normalizeShareUrl(url);
+    if (!u) return '';
+    var m = /^https?:\/\/([^/?#]+)/i.exec(u);
+    return m ? m[1].replace(/^www\./i, '') : '';
+  }
+
   function isHex(v) { return isStr(v) && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v.trim()); }
 
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
@@ -149,7 +176,8 @@
     linkTitle: 42, linkSub: 64, badge: 10, copyText: 400, url: 500,
     links: 20, footer: 80, formTitle: 34, formNote: 120,
     inqName: 40, inqContact: 60, inqMessage: 800,
-    avatarBytes: 700000, thumbBytes: 500000
+    avatarBytes: 700000, thumbBytes: 500000,
+    shareUrl: 300, qrBytes: 400000
   };
 
   /** SNS 아이콘: 외부 아이콘 폰트 없이 SVG path를 직접 넣는다. */
@@ -250,7 +278,7 @@
   function defaultState() {
     return {
       v: 1,
-      meta: { title: '내 링크 페이지', description: '', footer: '', credit: false },
+      meta: { title: '내 링크 페이지', description: '', footer: '', credit: false, shareUrl: '', qr: '' },
       profile: { name: '내 이름', handle: '', tagline: '', avatar: '', avatarShape: 'circle' },
       socials: [],
       blocks: [],
@@ -294,6 +322,8 @@
     s.meta.description = cut(meta.description, LIMITS.pageDesc);
     s.meta.footer = cut(meta.footer, LIMITS.footer);
     s.meta.credit = !!meta.credit;
+    s.meta.shareUrl = normalizeShareUrl(meta.shareUrl);
+    s.meta.qr = s.meta.shareUrl ? normalizeQr(meta.qr) : '';   /* 주소 없는 QR은 의미가 없다 */
 
     var pr = raw.profile || {};
     s.profile.name = cut(pr.name, LIMITS.name) || '내 이름';
@@ -869,6 +899,10 @@
     rules.push('.lh-btn--main{background:var(--lh-accent);border-color:var(--lh-accent);color:var(--lh-accent-ink)}');
     rules.push('.lh-foot{margin-top:auto;padding-top:calc(var(--lh-gap) + 8px);text-align:center;font-size:var(--lh-micro);line-height:1.6;color:var(--lh-sub)}');
     rules.push('.lh-foot p{margin:2px 0}');
+    rules.push('.lh-qr{margin-top:calc(var(--lh-gap) + 6px);display:flex;flex-direction:column;align-items:center;gap:8px}');
+    rules.push('.lh-qr img{width:132px;height:132px;display:block;border-radius:12px;background:#fff;padding:8px;box-shadow:0 0 0 1px var(--lh-line)}');
+    rules.push('.lh-qr p{margin:0;font-size:var(--lh-micro);line-height:1.5;color:var(--lh-sub);text-align:center;word-break:keep-all}');
+    rules.push('.lh-qr span{display:block;font-family:' + SYS_STACKS.mono + ';letter-spacing:.06em;opacity:.86}');
     rules.push('.lh-toast{position:fixed;left:50%;bottom:22px;z-index:40;max-width:calc(100% - 32px);padding:10px 16px;border-radius:999px;background:var(--lh-ink);color:var(--lh-bg);font-size:13px;line-height:1.4;text-align:center;opacity:0;transform:translate(-50%,14px);transition:opacity .18s ease,transform .18s ease;pointer-events:none}');
     rules.push('.lh-toast.is-on{opacity:1;transform:translate(-50%,0)}');
     rules.push('@media (hover:hover){.lh-card:hover{transform:translateY(-1px)}.lh-social a:hover{border-color:var(--lh-ink)}.lh-submit:hover{filter:brightness(1.05)}}');
@@ -1028,6 +1062,17 @@
     return out.join('');
   }
 
+  /** 공유 QR 블록 — 내보낸 HTML 안에 data URI로 들어가 외부 요청이 없다 */
+  function renderQr(s) {
+    if (!s.meta.qr || !s.meta.shareUrl) return '';
+    var host = shareHost(s.meta.shareUrl);
+    return '<div class="lh-qr">'
+      + '<img src="' + esc(s.meta.qr) + '" alt="' + esc(s.profile.name) + ' 페이지 QR 코드" width="140" height="140" decoding="async">'
+      + '<p>휴대폰 카메라로 찍으면 바로 열립니다'
+      + (host ? '<span>' + esc(host) + '</span>' : '') + '</p>'
+      + '</div>';
+  }
+
   function renderPage(state, opts) {
     opts = opts || {};
     var s = opts.normalized ? state : normalizeState(state);
@@ -1050,6 +1095,7 @@
       + renderSocials(s)
       + '</header>'
       + '<div class="lh-blocks">' + pageBlocks(s, now) + '</div>'
+      + renderQr(s)
       + (foot.length ? '<footer class="lh-foot">' + foot.join('') + '</footer>' : '')
       + '</main>'
       + '<div class="lh-toast" id="lhToast" role="status" aria-live="polite"></div>';
@@ -1277,6 +1323,9 @@
       scheduled.length ? scheduled.length + '개 링크가 시간에 맞춰 열리고 닫힙니다.' : '예약된 링크 없음');
     add('meta', '페이지 제목·설명', s.meta.title && s.meta.description ? 'ok' : 'warn',
       s.meta.description ? '검색·공유 미리보기에 쓰입니다.' : '설명이 비어 있으면 한 줄 소개로 대신합니다.');
+    add('qr', '공유 QR', s.meta.qr ? 'ok' : (s.meta.shareUrl ? 'warn' : 'ok'),
+      s.meta.qr ? '내보낸 페이지에 QR 코드가 함께 들어갑니다.'
+        : (s.meta.shareUrl ? '공개 주소가 있습니다. QR을 만들어 주세요.' : '오픈카톡·명함에 찍을 공개 주소를 넣으면 QR이 생깁니다. (선택)'), '공유 주소');
     add('contrast', '색 대비(WCAG AA)', d && d.allPass ? 'ok' : 'warn',
       d ? (d.allPass ? '본문·버튼 모두 기준 통과' : '일부 조합이 기준 미달 — 다른 프리셋을 권합니다.') : '확인 실패');
     add('density', '카드 글자 길이', longTitle.length ? 'warn' : 'ok',
@@ -1356,6 +1405,7 @@
 
     esc: esc, cut: cut, clipText: clipText, clone: clone, uid: uid, isHex: isHex,
     normalizeHref: normalizeHref, hrefIsSafe: hrefIsSafe, normalizeImage: normalizeImage,
+    normalizeShareUrl: normalizeShareUrl, normalizeQr: normalizeQr, shareHost: shareHost, renderQr: renderQr,
     parseLocalDateTime: parseLocalDateTime, toLocalInput: toLocalInput, fmtMD: fmtMD,
     hostOf: hostOf, firstChar: firstChar, utf8Bytes: utf8Bytes,
 

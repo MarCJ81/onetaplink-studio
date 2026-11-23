@@ -219,6 +219,8 @@
     setInput('fPageTitle', state.meta.title);
     setInput('fPageDesc', state.meta.description);
     setInput('fFooter', state.meta.footer);
+    setInput('fShareUrl', state.meta.shareUrl);
+    renderQrBox();
 
     var av = document.getElementById('avatarPreview');
     if (av) {
@@ -603,6 +605,215 @@
     });
   }
 
+  /* ---------------- 사진 엔진: HEIC 변환 · 자르기 · QR ---------------- */
+  /* 무거운 라이브러리는 필요할 때만 같은 저장소에서 불러온다(첫 화면 용량 0). */
+  var VENDOR = {
+    heic: 'assets/vendor/heic2any.min.js',
+    cropperJs: 'assets/vendor/cropper.min.js',
+    cropperCss: 'assets/vendor/cropper.min.css',
+    qr: 'assets/vendor/qr-code-styling.js'
+  };
+  var vendorLoaded = {};
+  var cropper = null;
+  var cropUrl = '';
+
+  function loadScript(src) {
+    if (vendorLoaded[src]) return vendorLoaded[src];
+    vendorLoaded[src] = new Promise(function (resolve, reject) {
+      var el = document.createElement('script');
+      el.src = src;
+      el.async = true;
+      el.onload = function () { resolve(); };
+      el.onerror = function () { reject(new Error('스크립트를 불러오지 못했습니다: ' + src)); };
+      document.head.appendChild(el);
+    });
+    return vendorLoaded[src];
+  }
+
+  function loadStyle(href) {
+    if (vendorLoaded[href]) return vendorLoaded[href];
+    vendorLoaded[href] = new Promise(function (resolve, reject) {
+      var el = document.createElement('link');
+      el.rel = 'stylesheet';
+      el.href = href;
+      el.onload = function () { resolve(); };
+      el.onerror = function () { reject(new Error('스타일을 불러오지 못했습니다: ' + href)); };
+      document.head.appendChild(el);
+    });
+    return vendorLoaded[href];
+  }
+
+  function ensureHeic() {
+    if (typeof window.heic2any === 'function') return Promise.resolve();
+    return loadScript(VENDOR.heic);
+  }
+
+  function ensureCropper() {
+    if (typeof window.Cropper === 'function') return Promise.resolve();
+    return loadScript(VENDOR.cropperJs).then(function () { return loadStyle(VENDOR.cropperCss); });
+  }
+
+  function ensureQrLib() {
+    if (typeof window.QRCodeStyling === 'function') return Promise.resolve();
+    return loadScript(VENDOR.qr);
+  }
+
+  /** 아이폰 HEIC/HEIF 여부 — 확장자·MIME 둘 다 본다(브라우저가 MIME을 비우는 경우가 있다) */
+  function isHeic(file) {
+    if (!file) return false;
+    var type = String(file.type || '').toLowerCase();
+    var name = String(file.name || '').toLowerCase();
+    return type === 'image/heic' || type === 'image/heif' || type === 'image/heic-sequence'
+      || /\.(heic|heif)$/.test(name);
+  }
+
+  /** HEIC → JPEG 변환(heic2any, MIT). 실패해도 앱이 멈추지 않게 오류를 돌려준다. */
+  function toJpeg(file, quality) {
+    if (!file) return Promise.reject(new Error('파일이 없습니다.'));
+    if (!isHeic(file)) return Promise.resolve(file);
+    return ensureHeic().then(function () {
+      return window.heic2any({ blob: file, toType: 'image/jpeg', quality: quality || 0.9, multiple: false });
+    }).then(function (out) {
+      var blob = Array.isArray(out) ? out[0] : out;
+      if (!blob) throw new Error('변환 결과가 비어 있습니다.');
+      var base = String(file.name || 'photo').replace(/\.(heic|heif)$/i, '');
+      try { return new File([blob], base + '.jpg', { type: 'image/jpeg' }); }
+      catch (e) { blob.name = base + '.jpg'; return blob; }
+    });
+  }
+
+  function openCropper(file) {
+    return new Promise(function (resolve) {
+      var modal = document.getElementById('cropModal');
+      var stage = document.getElementById('cropStage');
+      if (!modal || !stage) { resolve(null); return; }
+      ensureCropper().then(function () {
+        if (cropUrl) { try { URL.revokeObjectURL(cropUrl); } catch (e) {} }
+        cropUrl = URL.createObjectURL(file);
+        stage.innerHTML = '<img id="cropImg" alt="자를 사진" src="' + cropUrl + '">';
+        var img = document.getElementById('cropImg');
+        var done = false;
+        function finish(val) {
+          if (done) return;
+          done = true;
+          try { if (cropper) { cropper.destroy(); } } catch (e) {}
+          cropper = null;
+          if (modal.open) modal.close();
+          if (cropUrl) { try { URL.revokeObjectURL(cropUrl); } catch (e) {} cropUrl = ''; }
+          resolve(val);
+        }
+        modal._finish = finish;
+        function start() {
+          try {
+            cropper = new window.Cropper(img, {
+              aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 0.9,
+              background: false, responsive: true, guides: true, center: true,
+              toggleDragModeOnDblclick: false, checkOrientation: true
+            });
+          } catch (e) { finish(null); return; }
+          if (!modal.open) modal.showModal();
+        }
+        if (img.complete && img.naturalWidth) start();
+        else { img.onload = start; img.onerror = function () { finish(null); }; }
+      }).catch(function () {
+        resolve(null);
+        flash('사진 도구를 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
+      });
+    });
+  }
+
+  function cropResult() {
+    if (!cropper) return '';
+    var canvas = cropper.getCroppedCanvas({ width: 320, height: 320, imageSmoothingQuality: 'high' });
+    if (!canvas) return '';
+    return canvas.toDataURL('image/jpeg', 0.86);
+  }
+
+  function closeCropper(value) {
+    var modal = document.getElementById('cropModal');
+    if (modal && typeof modal._finish === 'function') modal._finish(value);
+  }
+
+  /** 공유 주소 → QR(SVG data URI). 내보낸 HTML 안에 그림으로 들어간다. */
+  function makeQrData(url) {
+    return ensureQrLib().then(function () {
+      var QR = window.QRCodeStyling;
+      if (typeof QR !== 'function') throw new Error('QR 엔진 없음');
+      var qr = new QR({
+        width: 420, height: 420, type: 'svg', data: url, margin: 1,
+        qrOptions: { errorCorrectionLevel: 'M' },
+        dotsOptions: { color: '#1b1a17', type: 'rounded' },
+        cornersSquareOptions: { color: '#1b1a17', type: 'extra-rounded' },
+        cornersDotOptions: { color: '#1b1a17' },
+        backgroundOptions: { color: '#ffffff' }
+      });
+      return qr.getRawData('svg').then(function (blob) {
+        if (!blob) throw new Error('QR 생성 실패');
+        return new Promise(function (resolve, reject) {
+          var fr = new FileReader();
+          fr.onload = function () { resolve(String(fr.result)); };
+          fr.onerror = function () { reject(new Error('QR 읽기 실패')); };
+          fr.readAsDataURL(blob);
+        });
+      });
+    });
+  }
+
+  function renderQrBox() {
+    var box = document.getElementById('qrPreview');
+    var dl = document.querySelector('[data-action="qr-download"]');
+    if (!box) return;
+    if (state.meta.qr) {
+      box.innerHTML = '<img alt="공유 QR 코드" src="' + esc(state.meta.qr) + '" width="132" height="132">'
+        + '<span class="qr-host">' + esc(C.shareHost(state.meta.shareUrl)) + '</span>';
+    } else {
+      box.innerHTML = '<span class="qr-empty">' + (state.meta.shareUrl ? 'QR 만들기를 누르세요' : '주소를 넣고 QR 만들기를 누르세요') + '</span>';
+    }
+    if (dl) dl.disabled = !state.meta.qr;
+  }
+
+  function buildQr() {
+    var url = state.meta.shareUrl;
+    if (!url) {
+      flash('먼저 공개 주소를 넣어 주세요. 올린 페이지 주소를 그대로 쓰면 됩니다.');
+      var input = document.getElementById('fShareUrl');
+      if (input) input.focus();
+      return Promise.resolve();
+    }
+    return makeQrData(url).then(function (data) {
+      apply(C.updateMeta(state, { qr: data }));
+      flash('QR을 만들었습니다. 내보낸 페이지 아래에 함께 들어갑니다.');
+    }).catch(function () {
+      flash('QR을 만들지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
+    });
+  }
+
+  function downloadQr() {
+    if (!state.meta.qr) { flash('먼저 QR을 만들어 주세요.'); return; }
+    ensureQrLib().then(function () {
+      var QR = window.QRCodeStyling;
+      var qr = new QR({
+        width: 1024, height: 1024, type: 'canvas', data: state.meta.shareUrl, margin: 2,
+        qrOptions: { errorCorrectionLevel: 'M' },
+        dotsOptions: { color: '#1b1a17', type: 'rounded' },
+        cornersSquareOptions: { color: '#1b1a17', type: 'extra-rounded' },
+        cornersDotOptions: { color: '#1b1a17' },
+        backgroundOptions: { color: '#ffffff' }
+      });
+      return qr.download({ name: 'onetaplink-qr', extension: 'png' });
+    }).then(function () {
+      flash('QR PNG를 저장했습니다.');
+    }).catch(function () { flash('QR 저장에 실패했습니다.'); });
+  }
+
+  /** 내보내기 전에 공개 주소가 있는데 QR이 없으면 만들어 둔다 */
+  function ensureQrForExport() {
+    if (!state.meta.shareUrl || state.meta.qr) return Promise.resolve();
+    return makeQrData(state.meta.shareUrl).then(function (data) {
+      apply(C.updateMeta(state, { qr: data }));
+    }).catch(function () { /* QR 실패는 내보내기를 막지 않는다 */ });
+  }
+
   /* ---------------- 내보내기 ---------------- */
   function buildDoc() { return C.exportDocument(state); }
 
@@ -652,19 +863,23 @@
   }
 
   function doExport() {
-    var doc = buildDoc();
-    lastDoc = doc;
-    downloadDoc(doc);
-    showExportModal(doc);
-    saveState();
+    ensureQrForExport().then(function () {
+      var doc = buildDoc();
+      lastDoc = doc;
+      downloadDoc(doc);
+      showExportModal(doc);
+      saveState();
+    });
   }
 
   function openPage() {
-    var doc = buildDoc();
-    var url = URL.createObjectURL(new Blob([doc], { type: 'text/html;charset=utf-8' }));
-    var win = window.open(url, '_blank');
-    if (!win) flash('팝업이 막혔습니다. 브라우저의 팝업 허용을 켜 주세요.');
-    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    ensureQrForExport().then(function () {
+      var doc = buildDoc();
+      var url = URL.createObjectURL(new Blob([doc], { type: 'text/html;charset=utf-8' }));
+      var win = window.open(url, '_blank');
+      if (!win) flash('팝업이 막혔습니다. 브라우저의 팝업 허용을 켜 주세요.');
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    });
   }
 
   /* ---------------- 템플릿 ---------------- */
@@ -743,6 +958,13 @@
     $$('.rail-tab').forEach(function (t) {
       t.addEventListener('click', function () { switchPanel(t.dataset.panel); });
     });
+
+    var cropModal = document.getElementById('cropModal');
+    if (cropModal) {
+      cropModal.addEventListener('close', function () {
+        if (typeof cropModal._finish === 'function') cropModal._finish(null);
+      });
+    }
   }
 
   function onClick(e) {
@@ -782,6 +1004,12 @@
         return;
       }
       if (action === 'avatar-pick') { pickAvatar(); return; }
+      if (action === 'avatar-crop') { cropCurrentAvatar(); return; }
+      if (action === 'crop-apply') { closeCropper(cropResult()); return; }
+      if (action === 'crop-cancel') { closeCropper(null); return; }
+      if (action === 'crop-reset') { if (cropper) { try { cropper.reset(); } catch (e) {} } return; }
+      if (action === 'qr-make') { buildQr(); return; }
+      if (action === 'qr-download') { downloadQr(); return; }
       if (action === 'avatar-clear') {
         commit(C.updateProfile(state, { avatar: '' }));
         flash('프로필 사진을 지웠습니다.');
@@ -964,6 +1192,13 @@
     if (id === 'fPageTitle') { soft(C.updateMeta(state, { title: t.value })); return; }
     if (id === 'fPageDesc') { soft(C.updateMeta(state, { description: t.value })); return; }
     if (id === 'fFooter') { soft(C.updateMeta(state, { footer: t.value })); return; }
+    if (id === 'fShareUrl') {
+      var nextUrl = C.normalizeShareUrl(t.value);
+      var patch = { shareUrl: nextUrl };
+      if (nextUrl !== state.meta.shareUrl) patch.qr = '';   /* 주소가 바뀌면 QR은 다시 */
+      soft(C.updateMeta(state, patch));
+      return;
+    }
     if (id === 'fFormTitle') { soft(C.updateForm(state, { title: t.value })); return; }
     if (id === 'fFormNote') { soft(C.updateForm(state, { note: t.value })); return; }
     if (id === 'fFormUrl') { soft(C.updateForm(state, { url: t.value })); return; }
@@ -1135,18 +1370,49 @@
   }
 
   function pickAvatar() {
-    pickFile('image/png,image/jpeg,image/webp', function (file) {
-      shrinkImage(file, 320, 320, 0.86).then(function (data) {
+    pickFile('image/png,image/jpeg,image/webp,image/heic,image/heif,.heic,.heif', function (file) {
+      var heic = isHeic(file);
+      if (heic) flash('아이폰 HEIC 사진을 JPEG로 바꾸는 중…');
+      toJpeg(file, 0.9).then(function (jpg) {
+        if (heic) flash('HEIC 사진을 JPEG로 바꿨습니다. 자르는 위치를 맞춰 주세요.');
+        return openCropper(jpg);
+      }).then(function (data) {
+        if (!data) return;
         if (data.length > C.LIMITS.avatarBytes) { flash('사진이 너무 큽니다. 더 작은 사진을 써 주세요.'); return; }
         apply(C.updateProfile(state, { avatar: data }));
         flash('프로필 사진을 넣었습니다.');
-      }).catch(function () { flash('이미지를 읽지 못했습니다.'); });
+      }).catch(function () {
+        flash('사진을 읽지 못했습니다. 아이폰 사진이면 설정 → 카메라 → 포맷을 ‘높은 호환성’으로 바꾸거나 JPEG로 저장해 주세요.');
+      });
     });
   }
 
+  function dataUrlToBlob(dataUrl) {
+    var parts = String(dataUrl || '').split(',');
+    var mime = /data:([^;]+)/.exec(parts[0] || '');
+    var bin = atob(parts[1] || '');
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: mime ? mime[1] : 'image/jpeg' });
+  }
+
+  function cropCurrentAvatar() {
+    if (!state.profile.avatar) { flash('먼저 사진을 올려 주세요.'); return; }
+    openCropper(dataUrlToBlob(state.profile.avatar)).then(function (data) {
+      if (!data) return;
+      if (data.length > C.LIMITS.avatarBytes) { flash('사진이 너무 큽니다. 더 작은 사진을 써 주세요.'); return; }
+      apply(C.updateProfile(state, { avatar: data }));
+      flash('사진을 다시 잘랐습니다.');
+    }).catch(function () { flash('자르기를 열지 못했습니다.'); });
+  }
+
   function pickThumb(rowId) {
-    pickFile('image/png,image/jpeg,image/webp', function (file) {
-      shrinkImage(file, 480, 360, 0.8).then(function (data) {
+    pickFile('image/png,image/jpeg,image/webp,image/heic,image/heif,.heic,.heif', function (file) {
+      var heic = isHeic(file);
+      toJpeg(file, 0.85).then(function (jpg) {
+        if (heic) flash('HEIC 사진을 JPEG로 바꿨습니다.');
+        return shrinkImage(jpg, 480, 360, 0.8);
+      }).then(function (data) {
         if (data.length > C.LIMITS.thumbBytes) { flash('썸네일이 너무 큽니다.'); return; }
         apply(C.updateBlock(state, rowId, { thumb: data }));
         flash('썸네일을 넣었습니다.');

@@ -212,3 +212,12 @@ python3 uitest.py
 - 디자인 엔진: `packages/design-ref-engine.js` (v2.0.0).
 - 폰트: IBM Plex Sans KR (SIL Open Font License) — 스튜디오 UI 전용.
 - 내보낸 페이지에는 어떤 라이선스 표시도 강제하지 않는다(크레딧 기본 꺼짐).
+
+## 사진·QR 엔진 — heic2any · Cropper.js · qr-code-styling (모두 MIT)
+
+- **아이폰 HEIC/HEIF 사진**을 올리면 `heic2any`(MIT)가 브라우저에서 JPEG로 바꿉니다. 변환 라이브러리는 HEIC 파일을 실제로 올릴 때만 같은 저장소에서 불러오므로 첫 화면 용량은 그대로입니다.
+- **프로필 사진 자르기**: `Cropper.js`(MIT)로 정사각 크롭·확대·이동 후 320×320 JPEG로 저장합니다. 이미 넣은 사진은 "자르기" 버튼으로 다시 조정합니다.
+- **공유 QR**: 공개 주소를 넣으면 `qr-code-styling`(MIT)이 QR을 만들고, 내보낸 `index.html`에 **data URI(SVG) 그림**으로 삽입합니다. 외부 요청 0건은 그대로입니다. PNG로 따로 저장할 수도 있습니다.
+- 벤더 파일: `assets/vendor/` (heic2any.min.js · cropper.min.js · cropper.min.css · qr-code-styling.js). 내보낸 결과물에는 들어가지 않습니다.
+- 검증: `node test.js` 253개 통과, `python3 uitest.py` 실제 Chrome 183개 통과(HEIC 변환·크롭·QR·내보낸 파일 단독 렌더 포함).
+- 라이선스 고지: `THIRD-PARTY-NOTICES.md`.

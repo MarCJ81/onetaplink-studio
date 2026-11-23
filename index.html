@@ -72,10 +72,11 @@
           <div class="avatar-preview" id="avatarPreview" aria-hidden="true"></div>
           <div class="avatar-actions">
             <button type="button" class="btn btn-line btn-sm" data-action="avatar-pick">사진 올리기</button>
+            <button type="button" class="btn btn-quiet btn-sm" data-action="avatar-crop">자르기</button>
             <button type="button" class="btn btn-quiet btn-sm" data-action="avatar-clear">지우기</button>
-            <p class="hint">320px 정사각으로 줄여 페이지 안에 함께 넣습니다. 외부 이미지 주소는 쓰지 않습니다.</p>
+            <p class="hint">아이폰 HEIC 사진은 자동으로 JPEG로 바꿉니다. 320px 정사각으로 자르고 페이지 안에 함께 넣습니다.</p>
           </div>
-          <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp" aria-label="프로필 사진 파일 선택" hidden>
+          <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp,image/heic,image/heif,.heic,.heif" aria-label="프로필 사진 파일 선택" hidden>
         </div>
 
         <div class="field-grid">
@@ -101,6 +102,19 @@
           <label class="field field-wide"><span>페이지 제목 <em id="pageTitleCount">0/60</em></span><input id="fPageTitle" type="text" maxlength="60"></label>
           <label class="field field-wide"><span>설명</span><textarea id="fPageDesc" rows="2" maxlength="140" placeholder="비어 있으면 한 줄 소개를 씁니다"></textarea></label>
           <label class="field field-wide"><span>하단 문구(선택)</span><input id="fFooter" type="text" maxlength="80" placeholder="© 2026 한서연 디자인 스튜디오"></label>
+        </div>
+
+        <div class="block-head"><h3>공유 QR</h3><span class="muted">명함·오픈카톡·인쇄물</span></div>
+        <div class="field-grid">
+          <label class="field field-wide"><span>공개 주소(올린 뒤 주소)</span><input id="fShareUrl" type="url" maxlength="300" placeholder="https://example.com/me" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <div class="qr-row">
+          <div class="qr-preview" id="qrPreview" aria-live="polite"><span class="qr-empty">주소를 넣고 QR 만들기를 누르세요</span></div>
+          <div class="qr-actions">
+            <button type="button" class="btn btn-line btn-sm" data-action="qr-make">QR 만들기</button>
+            <button type="button" class="btn btn-quiet btn-sm" data-action="qr-download">PNG 저장</button>
+            <p class="hint">QR은 내보낸 페이지 안에 그림으로 들어갑니다. 외부 요청도, 서버도 필요 없습니다.</p>
+          </div>
         </div>
       </section>
 
@@ -332,6 +346,23 @@
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- 사진 자르기 모달 -->
+<dialog class="modal crop-modal" id="cropModal" aria-labelledby="cropTitle">
+  <div class="modal-head">
+    <div><h2 id="cropTitle">사진 자르기</h2><p>정사각으로 맞춥니다. 끌어서 옮기고, 모서리를 잡아 확대하세요.</p></div>
+    <button type="button" class="icon-btn" data-action="crop-cancel" aria-label="닫기">✕</button>
+  </div>
+  <div class="crop-stage" id="cropStage"></div>
+  <div class="crop-tools">
+    <button type="button" class="btn btn-quiet btn-sm" data-action="crop-reset">처음으로</button>
+    <span class="hint" id="cropNote">320 × 320px JPEG</span>
+  </div>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-quiet" data-action="crop-cancel">취소</button>
+    <button type="button" class="btn btn-primary" data-action="crop-apply">이대로 넣기</button>
+  </div>
+</dialog>
 
 <script src="engines/design-ref-engine.js"></script>
 <script src="core.js"></script>

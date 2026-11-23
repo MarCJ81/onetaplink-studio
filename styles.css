@@ -748,3 +748,33 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* ── 공유 QR ───────────────────────────────────────────── */
+.qr-row { display: flex; gap: 14px; align-items: flex-start; margin: 2px 0 6px; }
+.qr-preview {
+  width: 132px; height: 132px; flex: 0 0 132px;
+  display: grid; place-items: center; gap: 4px;
+  border: 1px dashed var(--line, #dcd7cf); border-radius: 12px;
+  background: #fff; padding: 6px; overflow: hidden;
+}
+.qr-preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.qr-preview .qr-empty { font-size: 11.5px; line-height: 1.45; color: var(--sub, #8a857d); text-align: center; padding: 0 6px; }
+.qr-preview .qr-host { font-size: 10.5px; letter-spacing: .04em; color: var(--sub, #8a857d); }
+.qr-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.qr-actions .hint { flex-basis: 100%; margin: 2px 0 0; }
+.qr-actions .btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* ── 사진 자르기 모달 ───────────────────────────────────── */
+.crop-modal { max-width: 520px; }
+.crop-stage {
+  height: 320px; background: #14120f; border-radius: 12px; overflow: hidden;
+  display: grid; place-items: center; margin: 0 0 10px;
+}
+.crop-stage img { max-width: 100%; display: block; }
+.crop-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.crop-tools .hint { margin: 0; }
+.cropper-container { width: 100% !important; }
+@media (max-width: 640px) {
+  .qr-row { flex-direction: column; align-items: stretch; }
+  .crop-stage { height: 260px; }
+}
