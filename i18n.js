@@ -227,6 +227,10 @@
 
   function walk(node) {
     if (node.nodeType === 3) { trText(node); return; }
+    if (node.nodeType === 11) {
+      for (var f = node.firstChild; f; f = f.nextSibling) walk(f);
+      return;
+    }
     if (node.nodeType !== 1) return;
     if (node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE' && node.tagName !== 'SVG' &&
         !(node.classList && node.classList.contains('onetap-lang'))) trAttrs(node);
@@ -296,6 +300,8 @@
   function applyEn() {
     var title = root.__onetapTitle || (root.__onetapTitle = doc.title);
     walk(doc.body);
+    var tpls = doc.querySelectorAll('template');
+    for (var ti = 0; ti < tpls.length; ti++) if (tpls[ti].content) walk(tpls[ti].content);
     trFieldValues();
     trMeta();
     trJsonLd();
